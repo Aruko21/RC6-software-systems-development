@@ -1,0 +1,9 @@
+cmake-build-debug/
+.idea/
+*.tar
+*.tar.gz
+*.o
+lab1
+lab2
+lab3
+lab4
