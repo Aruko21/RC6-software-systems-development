@@ -4,3 +4,4 @@ project(LAB_RPS C)
 set(CMAKE_C_STANDARD 99)
 
 add_executable(lab1 Kosenkov-64-1/src/main.c)
+add_executable(lab1-modified Kosenkov-64-1/src/main-modified.c)
