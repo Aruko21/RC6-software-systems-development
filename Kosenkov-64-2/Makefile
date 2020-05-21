@@ -14,7 +14,8 @@ INCLUDE = -Iinclude
 OBJECTS = src/main.o \
 	src/main_thread.o \
 	src/first_thread.o \
-	src/second_thread.o
+	src/second_thread.o \
+	src/string_handlers.o
 
 # source files directory
 SRCS = src/

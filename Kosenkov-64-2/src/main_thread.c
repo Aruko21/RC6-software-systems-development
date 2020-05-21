@@ -47,6 +47,17 @@ void command_reader() {
     write(STDOUT_FILENO, msg_buf, strlen(msg_buf));
 }
 
+int str_normalize_enter(char *string) {
+    size_t length = strlen(string);
+
+    if (string[length - 1] == '\n') {
+        string[length - 1] = '\0';
+        return 1;
+    }
+
+    return 0;
+}
+
 void reader() {
     pthread_mutex_lock(&mutx1);
 
@@ -63,6 +74,9 @@ void reader() {
         if (input_str_len == 0) {
             break;
         }
+
+        int is_normalized = str_normalize_enter(input_str_buf);
+        input_str_len -= is_normalized;
 
         pthread_cond_signal(&cond_can_first_handle);
 
