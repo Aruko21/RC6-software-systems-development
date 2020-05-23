@@ -61,7 +61,6 @@ int str_normalize_enter(char *string) {
 void reader() {
     char *tmp_message = "Main thread start, you can enter your strings now\n";
     write(STDOUT_FILENO, tmp_message, strlen(tmp_message));
-
     pthread_mutex_lock(&mutx1);
 
     while (1) {
@@ -78,7 +77,17 @@ void reader() {
         }
 
         int is_normalized = str_normalize_enter(input_str_buf);
+        if (is_normalized) {
+            printf("DEBUG: Input string was normalized\n");
+        }
         input_str_len -= is_normalized;
+
+        printf("DEBUG: Input string in char codes: ");
+        for (size_t i = 0; i < input_str_len; ++i) {
+            printf("\\0%o", input_str_buf[i]);
+        }
+        printf("\n");
+
 
         if (input_str_len == 0) {
             continue;

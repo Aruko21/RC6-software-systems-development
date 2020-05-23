@@ -1,0 +1,10 @@
+version: '3.3'
+services:
+  lab2:
+    container_name: lab2
+    restart: "no"
+    command: ./lab2
+    working_dir: /home/lab2
+    build:
+      context: .
+      dockerfile: ./Dockerfile

@@ -12,6 +12,10 @@ add_executable(lab2 Kosenkov-64-2/src/main.c Kosenkov-64-2/src/first_thread.c
                     Kosenkov-64-2/src/second_thread.c Kosenkov-64-2/src/main_thread.c
                     Kosenkov-64-2/src/string_handlers.c)
 target_include_directories(lab2 PRIVATE ${lab2_include})
+add_executable(lab2_debug Kosenkov-64-2/src/main.c Kosenkov-64-2/src/first_thread.c
+        Kosenkov-64-2/src/second_thread.c Kosenkov-64-2/src/main_thread_debug.c
+        Kosenkov-64-2/src/string_handlers.c)
+target_include_directories(lab2_debug PRIVATE ${lab2_include})
 
 
 #add_executable(tmp examples/lab2/thread.c)

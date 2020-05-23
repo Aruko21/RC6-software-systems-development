@@ -71,11 +71,6 @@ void *first_handler(void *arg_p) {
         string_handler handler_func = get_first_thread_handler();
         handler_func(tmp_buf, &formatted_string);
 
-        char *tmp_message = "First thread string: \n";
-        write(STDOUT_FILENO, tmp_message, strlen(tmp_message));
-        write(STDOUT_FILENO, formatted_string, length);
-        write(STDOUT_FILENO, "\n", 1);
-
         intermediate_str_len = length;
 
         strncpy(intermediate_str_buf, formatted_string, intermediate_str_len + 1);

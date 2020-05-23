@@ -1,7 +1,3 @@
-/*
- * TODO: Реализовать обработку строк
- */
-
 #include <unistd.h>
 #include <stdio.h>
 #include <signal.h>
@@ -36,7 +32,6 @@ void thread_initialise() {
     if (pthread_create(&itid, &pattr, first_handler, NULL)) {
         perror("pthread_create");
     }
-    sleep(1);
 
     if (pthread_create(&ctid, &pattr, second_handler, NULL)) {
         perror("pthread_create");
