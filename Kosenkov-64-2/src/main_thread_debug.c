@@ -55,17 +55,19 @@ int str_normalize_enter(char *string) {
         return 1;
     }
 
+    string[length] = '\0';
+
     return 0;
 }
 
 void reader() {
-    char *tmp_message = "Main thread start, you can enter your strings now\n";
+    char *tmp_message = "[Main thread start]: you can enter your strings now\n";
     write(STDOUT_FILENO, tmp_message, strlen(tmp_message));
+
     pthread_mutex_lock(&mutx1);
 
     while (1) {
-        input_str_len = read(0, input_str_buf, BUF_SIZE);
-
+        input_str_len = read(0, input_str_buf, BUF_SIZE - 1);
         if (command_flag == 1) {
             command_reader();
             command_flag = 0;
@@ -87,7 +89,6 @@ void reader() {
             printf("\\0%o", input_str_buf[i]);
         }
         printf("\n");
-
 
         if (input_str_len == 0) {
             continue;

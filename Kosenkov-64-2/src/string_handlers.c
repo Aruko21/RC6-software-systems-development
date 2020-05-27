@@ -36,13 +36,7 @@ void str_to_KOI8(const char *input, char **output) {
     size_t length = strlen(input);
 
     for (size_t i = 0; i < length; ++i) {
-        if (islower(input[i])) {
-            (*output)[i] = input[i] - 32;
-        } else if (isupper(input[i])) {
-            (*output)[i] = input[i] + 32;
-        }
-
-        (*output)[i] |= (1 << 7);
+        (*output)[i] = input[i] | (char)128;
     }
 
     (*output)[length] = '\0';

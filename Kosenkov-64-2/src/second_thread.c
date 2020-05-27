@@ -41,7 +41,7 @@ void *second_handler(void *arg_p) {
     char *formatted_string = (char *)malloc(BUF_SIZE);
     int length = 0;
 
-    char *message = "Second thread start\n";
+    char *message = "[Second thread start]\n";
     write(STDOUT_FILENO, message, strlen(message));
 
     while (1) {
@@ -51,7 +51,8 @@ void *second_handler(void *arg_p) {
             pthread_cond_wait(&cond_can_second_handle, &mutx2);
         }
 
-        if (done) {
+        // Main thread cad done, but the buffer is not empty, what means, that first thread is prepared new data
+        if (done && intermediate_str_len == 0) {
             pthread_mutex_unlock(&mutx2);
             break;
         }
@@ -67,10 +68,16 @@ void *second_handler(void *arg_p) {
         string_handler handler_func = get_second_thread_handler();
         handler_func(tmp_buf, &formatted_string);
 
-        char *tmp_message = "Second thread string: \n";
+        char *tmp_message = "\nSecond thread string: \n";
         write(STDOUT_FILENO, tmp_message, strlen(tmp_message));
-        write(STDOUT_FILENO, formatted_string, length);
-        write(STDOUT_FILENO, "\n", 1);
+
+        if (modes[0] == 4 && modes[1] != 1) {
+            tmp_message = "[KOI mode] String handling is not available for KOI mode\n";
+            write(STDOUT_FILENO, tmp_message, strlen(tmp_message));
+        } else {
+            write(STDOUT_FILENO, formatted_string, length);
+            write(STDOUT_FILENO, "\n", 1);
+        }
     }
 
     free(tmp_buf);

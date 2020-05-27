@@ -41,7 +41,7 @@ void *first_handler(void *arg_p) {
     char *formatted_string = (char *)malloc(BUF_SIZE);
     int length = 0;
 
-    char *message = "First thread start\n";
+    char *message = "[First thread start]\n";
     write(STDOUT_FILENO, message, strlen(message));
 
     pthread_mutex_lock(&mutx2);
@@ -53,7 +53,7 @@ void *first_handler(void *arg_p) {
             pthread_cond_wait(&cond_can_first_handle, &mutx1);
         }
 
-        if (done) {
+        if (done && input_str_len == 0) {
             pthread_cond_signal(&cond_can_second_handle);
             pthread_mutex_unlock(&mutx1);
             pthread_mutex_unlock(&mutx2);
@@ -70,6 +70,23 @@ void *first_handler(void *arg_p) {
 
         string_handler handler_func = get_first_thread_handler();
         handler_func(tmp_buf, &formatted_string);
+
+        char *tmp_message = "\nFirst thread string: \n";
+        write(STDOUT_FILENO, tmp_message, strlen(tmp_message));
+        write(STDOUT_FILENO, formatted_string, length);
+        write(STDOUT_FILENO, "\n", 1);
+
+        if (modes[0] == 4) {
+            tmp_message = "[KOI mode] First thread string in char codes: ";
+            write(STDOUT_FILENO, tmp_message, strlen(tmp_message));
+            for (size_t i = 0; i < length; ++i) {
+                char msg_buf[64];
+                unsigned char sym = formatted_string[i];
+                sprintf(msg_buf, "0x%x ", sym);
+                write(STDOUT_FILENO, msg_buf, strlen(msg_buf));
+            }
+            write(STDOUT_FILENO, "\n", 1);
+        }
 
         intermediate_str_len = length;
 
