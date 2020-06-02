@@ -44,8 +44,6 @@ void *first_handler(void *arg_p) {
     char *message = "[First thread start]\n";
     write(STDOUT_FILENO, message, strlen(message));
 
-    pthread_mutex_lock(&mutx2);
-
     while (1) {
         pthread_mutex_lock(&mutx1);
 
@@ -82,10 +80,16 @@ void *first_handler(void *arg_p) {
             for (size_t i = 0; i < length; ++i) {
                 char msg_buf[64];
                 unsigned char sym = formatted_string[i];
-                sprintf(msg_buf, "0x%x ", sym);
+                sprintf(msg_buf, "0x%X ", sym);
                 write(STDOUT_FILENO, msg_buf, strlen(msg_buf));
             }
             write(STDOUT_FILENO, "\n", 1);
+        }
+
+        pthread_mutex_lock(&mutx2);
+
+        while (intermediate_str_len != 0) {
+            pthread_cond_wait(&cond_can_first_send, &mutx2);
         }
 
         intermediate_str_len = length;
@@ -94,9 +98,7 @@ void *first_handler(void *arg_p) {
 
         pthread_cond_signal(&cond_can_second_handle);
 
-        while (intermediate_str_len != 0) {
-            pthread_cond_wait(&cond_can_first_send, &mutx2);
-        }
+        pthread_mutex_unlock(&mutx2);
     }
 
     free(tmp_buf);

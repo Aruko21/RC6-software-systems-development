@@ -14,6 +14,7 @@ pthread_cond_t cond_can_first_send;
 extern int input_str_len;
 extern int intermediate_str_len;
 extern int done;
+extern int is_debug;
 char input_str_buf[BUF_SIZE];
 char intermediate_str_buf[BUF_SIZE];
 int modes[2];

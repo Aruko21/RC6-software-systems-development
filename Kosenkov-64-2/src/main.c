@@ -13,6 +13,9 @@ int done = 0;
 int intermediate_str_len = 0;
 int input_str_len = 0;
 
+int is_debug = 0;
+
+
 void thread_initialise() {
     pthread_t itid, ctid;
     pthread_attr_t pattr;
@@ -47,7 +50,20 @@ void thread_free() {
     pthread_cond_destroy(&cond_can_second_handle);
 }
 
-int main(int argc, const char **argv) {
+int main(int argc, char **argv) {
+    int opt = 0;
+    while ((opt = getopt(argc, argv, "d")) != -1) {
+        switch (opt) {
+            case 'd': {
+                is_debug = 1;
+                break;
+            }
+            default: {
+                break;
+            }
+        }
+    }
+
     thread_initialise();
 
     // This interrupts read() function in case of getting signal

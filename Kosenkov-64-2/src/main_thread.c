@@ -26,6 +26,26 @@ void command_reader() {
     while (!is_command_correct) {
         int commands_str_len = read(0, input_str_buf, BUF_SIZE);
 
+        if (is_debug && commands_str_len <= 0) {
+            printf("DEBUG: Input command is empty, read() return is: %d\n ", commands_str_len);
+        }
+
+        if (commands_str_len == 0) {
+            char msg_buf[BUF_SIZE];
+            sprintf(msg_buf, "Mode switching was aborted. Current modes: Thread1 - %d, Thread2 - %d\n", modes[0], modes[1]);
+            write(STDOUT_FILENO, msg_buf, strlen(msg_buf));
+
+            return;
+        }
+
+        if (is_debug) {
+            printf("DEBUG: Input command in char codes: ");
+            for (size_t i = 0; i < commands_str_len; ++i) {
+                printf("0x%X ", input_str_buf[i]);
+            }
+            printf("\n");
+        }
+
         if (commands_str_len == 3) {
             if ((input_str_buf[0] >= '0' && input_str_buf[0] <= '4') &&
                 (input_str_buf[1] >= '0' && input_str_buf[1] <= '4')) {
@@ -74,8 +94,20 @@ void reader() {
             continue;
         }
 
+        if (is_debug && input_str_len <= 0) {
+            printf("\nDEBUG: Input string is empty, read() return is: %d\n", input_str_len);
+        }
+
         if (input_str_len == 0) {
             break;
+        }
+
+        if (is_debug && input_str_len > 0) {
+            printf("DEBUG: Input string in char codes: ");
+            for (size_t i = 0; i < input_str_len; ++i) {
+                printf("0x%X ", input_str_buf[i]);
+            }
+            printf("\n");
         }
 
         int is_normalized = str_normalize_enter(input_str_buf);
