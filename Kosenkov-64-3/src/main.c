@@ -1,6 +1,3 @@
-// TODO: Почему не могу перезапускать без ошибки bind?
-
-
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
@@ -10,75 +7,30 @@
 #include <unistd.h>
 #include <string.h>
 #include <stdio.h>
-#include <regex.h>
 
-#define HTTP_PORT 80
-
-#define BUF_SIZE 256
-#define URL_SIZE 512
-
-struct HttpRequestHdrs {
-    char *method;
-    char *path;
-    char *version;
-    char *host;
-    char *user_agent;
-};
-
-int domain_path_parser(const char *url, char **domain, char **path) {
-    regex_t regex;
-    int reg_status = 0;
-
-    reg_status = regcomp(&regex, "([-A-Za-z0-9.]+)(/(.*))?", REG_EXTENDED);
-    if (reg_status != 0) {
-        perror("Couldn't compile regex");
-
-        return -1;
-    }
-
-    size_t n = 3; // number of matches
-    regmatch_t *pmatch = (regmatch_t *) malloc(sizeof(regmatch_t) * n);
-
-    reg_status = regexec(&regex, url, 3, pmatch, 0);
-    if (reg_status == REG_NOMATCH) {
-        char msg_buf[BUF_SIZE];
-        sprintf(msg_buf, "Regular expression has no match\n");
-        write(STDERR_FILENO, msg_buf, strlen(msg_buf));
-
-        free(pmatch);
-
-        return -1;
-    }
-
-    // pmatch[0] = whole expression
-    size_t domain_len = pmatch[1].rm_eo - pmatch[1].rm_so;
-    memcpy(*domain, url + pmatch[1].rm_so, domain_len);
-    (*domain)[domain_len] = '\0';
+#include "general.h"
+#include "buffers.h"
+#include "parsers.h"
+#include "http_client.h"
 
 
-    if (pmatch[2].rm_so != -1) {
-        size_t path_len = pmatch[2].rm_eo - pmatch[2].rm_so;
-        memcpy(*path, url + pmatch[2].rm_so, domain_len);
-        (*path)[path_len] = '\0';
-    } else {
-        *path = "/";
-    }
-
-    free(pmatch);
-    regfree(&regex);
-
-    return 0;
+void print_error(const char *err_msg, const char *func_name) {
+    char msg_buf[BUF_SIZE];
+    sprintf(msg_buf, "%s: %s\n", func_name, err_msg);
+    write(STDERR_FILENO, msg_buf, strlen(msg_buf));
 }
-
 
 int main(int argc, const char **argv) {
     if (argc < 2) {
         char msg_buf[BUF_SIZE];
-        sprintf(msg_buf, "Missing URL address. Usage: %s, <URL>\n", argv[0]);
-        write(STDOUT_FILENO, msg_buf, strlen(msg_buf));
+        sprintf(msg_buf, "Missing URL address. Usage: %s <URL>", argv[0]);
+        print_error(msg_buf, __func__);
 
         return -1;
     }
+
+    int is_done = 0;
+    int is_error = 0;
 
     char srv_url[URL_SIZE];
     strcpy(srv_url, argv[1]);
@@ -88,72 +40,138 @@ int main(int argc, const char **argv) {
     char *url_domain = (char *) malloc(sizeof(char) * BUF_SIZE);
     char *url_path = (char *) malloc(sizeof(char) * BUF_SIZE);
 
-    status = domain_path_parser(srv_url, &url_domain, &url_path);
+    status = domain_path_parser(srv_url, &url_domain, &url_path, 0);
     if (status != 0) {
-        char msg_buf[BUF_SIZE];
-        sprintf(msg_buf, "Error while parsing url\n");
-        write(STDOUT_FILENO, msg_buf, strlen(msg_buf));
+        print_error("Error while parsing url", __func__);
 
         free(url_domain);
         free(url_path);
         return -1;
     }
 
-    printf("Check domain: '%s' and path: '%s'\n", url_domain, url_path);
-
-
-    struct addrinfo hints;
-    struct addrinfo *res;
-
-
-    memset((char *) &hints, 0, sizeof(hints));
-    hints.ai_family = AF_INET;
-    hints.ai_socktype = SOCK_STREAM;
-    // Заполняет двусвязный список в res, с информацией о нужном соединении. Список, т.к. для одного
-    // доменного имени может быть несколько адресов?
-    status = getaddrinfo(url_domain, "80", &hints, &res);
-    if (status != 0) {
-        char msg_buf[BUF_SIZE];
-        sprintf(msg_buf, "Error while getting addrinfo: %s\n", gai_strerror(status));
-        write(STDOUT_FILENO, msg_buf, strlen(msg_buf));
-
+    int sid = connect_to_srv(url_domain);
+    if (sid < 0) {
+        print_error("Error while connecting to server", __func__);
         free(url_domain);
         free(url_path);
+
         return -1;
     }
 
-    int sid = socket(res->ai_family, res->ai_socktype, res->ai_protocol); // socket id
-    if (sid == -1) {
-        perror("Error while creating socket");
-
+    buffer_t *html_page = allocate_buffer(MIN_DYN_BUF);
+    if (!html_page) {
+        perror("Error while allocating memory for html page buffer");
         free(url_domain);
         free(url_path);
-        return -1;
-    }
-
-
-    status = connect(sid, res->ai_addr, res->ai_addrlen);
-    if (status == -1) {
-        perror("Error while connecting to server");
         close(sid);
 
-        free(url_domain);
-        free(url_path);
         return -1;
     }
 
-    // TODO: соединение есть. Сделать отправку запроса, и получение ответа
-    // TODO: проработать стандартный вариант подключения по той статье, где описан getaddrinfo
-    struct HttpRequestHdrs request;
-    request.method = "GET";
-    request.path = url_path;
-    request.version = "1.1";
-    request.host = url_domain;
-    request.user_agent = "Simple HTTP Client on C";
+    document_links *links = allocate_links(MIN_LINKS);
+
+    do {
+        printf("\nCrossing to domain: '%s' with path: '%s'\n", url_domain, url_path);
+
+        HttpRequest request = create_GET_req(url_domain, url_path);
+
+        status = send_to_server(request, sid);
+        if (status < 0) {
+            print_error("Error while sending request", __func__);
+            is_error = 1;
+            break;
+        }
+
+        int response_length = receive_from_server(html_page, sid);
+
+        if (response_length < 0) {
+            print_error("Error while receiving response", __func__);
+            is_error = 1;
+            break;
+        }
+
+        write(STDOUT_FILENO, html_page->data, response_length);
+
+        parse_links(html_page->data, response_length, links);
+
+        char msg_buf[BUF_SIZE];
+        sprintf(msg_buf, "\n-----END OF HTML-----\n\nChoose number of link from below to cross:\n");
+        write(STDOUT_FILENO, msg_buf, strlen(msg_buf));
+        sprintf(msg_buf, "0 - Exit from HTTP-Client Application\n");
+        write(STDOUT_FILENO, msg_buf, strlen(msg_buf));
+
+        if (links->links_number == 0) {
+            sprintf(msg_buf, "- HTML page has no links -\n");
+            write(STDOUT_FILENO, msg_buf, strlen(msg_buf));
+        }
+
+        for (size_t i = 0; i < links->links_number; ++i) {
+            sprintf(msg_buf, "%lu - '%s'\n", i + 1, links->links[i]);
+            write(STDOUT_FILENO, msg_buf, strlen(msg_buf));
+        }
+
+        sprintf(msg_buf, "\nPlease, input link number you want cross to:\n");
+        write(STDOUT_FILENO, msg_buf, strlen(msg_buf));
+
+        char input_buf[BUF_SIZE];
+        int menu_item = -1;
+        while (menu_item < 0) {
+            int menu_input = read(0, input_buf, BUF_SIZE);
+            char *endptr;
+            int input_to_digit = strtol(input_buf, &endptr, 10);
+
+            if (input_buf == endptr) {
+                sprintf(msg_buf, "Your input is incorrect, please, enter only number\n");
+                write(STDOUT_FILENO, msg_buf, strlen(msg_buf));
+                continue;
+            }
+
+            if (input_to_digit > links->links_number || input_to_digit < 0) {
+                sprintf(msg_buf, "Your number must be in range (0, %lu)\n", links->links_number);
+                write(STDOUT_FILENO, msg_buf, strlen(msg_buf));
+                continue;
+            }
+            menu_item = input_to_digit;
+        }
+
+        if (menu_item == 0) {
+            sprintf(msg_buf, "Exiting application...\n");
+            write(STDOUT_FILENO, msg_buf, strlen(msg_buf));
+            is_done = 1;
+        } else {
+            char *new_domain = (char *) malloc(sizeof(char) * BUF_SIZE);
+            status = domain_path_parser(links->links[menu_item - 1], &new_domain, &url_path, HREF_FLAG);
+            if (status != 0) {
+                print_error("Error while parsing url", __func__);
+                is_error = 1;
+                break;
+            }
+
+            if (new_domain[0] == '\0' || strcmp(new_domain, url_domain) == 0) {
+                free(new_domain);
+            } else {
+                free(url_domain);
+                url_domain = new_domain;
+            }
+
+            close(sid);
+            sprintf(msg_buf, "Reconnect to '%s' domain...\n", url_domain);
+            write(STDOUT_FILENO, msg_buf, strlen(msg_buf));
+            sid = connect_to_srv(url_domain);
+        }
+
+    } while (!is_done);
 
 
-    freeaddrinfo(res);
+    free_links(links);
+    free_buffer(html_page);
+    free(url_domain);
+    free(url_path);
     close(sid);
+
+    if (is_error) {
+        return -1;
+    }
 
     return 0;
 }

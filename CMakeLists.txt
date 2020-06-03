@@ -15,7 +15,9 @@ add_executable(lab2 Kosenkov-64-2/src/main.c Kosenkov-64-2/src/first_thread.c
 target_include_directories(lab2 PRIVATE ${lab2_include})
 target_link_libraries(lab2 Threads::Threads)
 
-add_executable(lab3 Kosenkov-64-3/src/main.c)
+set(lab3_include "Kosenkov-64-3/include")
+add_executable(lab3 Kosenkov-64-3/src/main.c Kosenkov-64-3/src/buffers.c Kosenkov-64-3/src/parsers.c Kosenkov-64-3/src/http_client.c)
+target_include_directories(lab3 PRIVATE ${lab3_include})
 
 #add_executable(tmp examples/lab2/thread.c)
 #add_executable(tmp2 examples/lab2/thread_for_lab.c)
