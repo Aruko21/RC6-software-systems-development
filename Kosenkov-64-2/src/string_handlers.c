@@ -36,7 +36,11 @@ void str_to_KOI8(const char *input, char **output) {
     size_t length = strlen(input);
 
     for (size_t i = 0; i < length; ++i) {
-        (*output)[i] = input[i] | (char)128;
+        if (isalpha(input[i])) {
+            (*output)[i] = input[i] | (char) 128;
+        } else {
+            (*output)[i] = input[i];
+        }
     }
 
     (*output)[length] = '\0';
