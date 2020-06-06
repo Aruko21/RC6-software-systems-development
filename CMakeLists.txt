@@ -19,9 +19,15 @@ set(lab3_include "Kosenkov-64-3/include")
 add_executable(lab3 Kosenkov-64-3/src/main.c Kosenkov-64-3/src/buffers.c Kosenkov-64-3/src/parsers.c Kosenkov-64-3/src/http_client.c)
 target_include_directories(lab3 PRIVATE ${lab3_include})
 
-#add_executable(tmp examples/lab2/thread.c)
-#add_executable(tmp2 examples/lab2/thread_for_lab.c)
+add_executable(lab4 Kosenkov-64-4/src/main.c)
+
+include_directories(/usr/include/mpi/)
+
 add_executable(atasunts examples/lab2/done_lab_25/main.c examples/lab2/done_lab_25/definitions.h examples/lab2/done_lab_25/st.c examples/lab2/done_lab_25/ft.c)
+
 add_executable(chernov examples/lab3/Chernov/main.c)
 add_executable(bobkov examples/lab3/Bobkov/main.c)
 add_executable(tretyakova examples/lab3/Tretyakova/main.c)
+
+add_executable(lubyanov examples/lab4/Lubyanov/main.c)
+add_executable(kizimenko examples/lab4/Kizimenko/main.c)
