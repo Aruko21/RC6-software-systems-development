@@ -140,12 +140,18 @@ int main(int argc, const char **argv) {
             is_done = 1;
         } else {
             char *new_domain = (char *) malloc(sizeof(char) * BUF_SIZE);
-            status = domain_path_parser(links->links[menu_item - 1], &new_domain, &url_path, HREF_FLAG);
-            if (status != 0) {
+            char *new_path = (char *) malloc(sizeof(char) * BUF_SIZE);
+            status = domain_path_parser(links->links[menu_item - 1], &new_domain, &new_path, HREF_FLAG);
+            if (status == PARSE_ERROR) {
                 print_error("Error while parsing url", __func__);
                 is_error = 1;
                 break;
+            } else if (status == RELATIVE_PATH) {
+                strcat(url_path, new_path);
+            } else if (status == ABSOLUTE_PATH) {
+                strcpy(url_path, new_path);
             }
+            free(new_path);
 
             if (new_domain[0] == '\0' || strcmp(new_domain, url_domain) == 0) {
                 free(new_domain);

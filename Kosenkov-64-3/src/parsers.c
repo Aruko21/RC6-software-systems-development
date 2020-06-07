@@ -10,12 +10,16 @@
 #include "general.h"
 #include "buffers.h"
 
+
 int domain_path_parser(const char *url, char **domain, char **path, int href_flag) {
     regex_t regex;
     int reg_status = 0;
 
+    int is_absolute = 0;
+    int is_relative = 0;
+
     if (!href_flag) {
-        reg_status = regcomp(&regex, "([-A-Za-z0-9.]+)(/.*)", REG_EXTENDED);
+        reg_status = regcomp(&regex, "([-A-Za-z0-9.]+)(/.*)?", REG_EXTENDED);
     } else {
         reg_status = regcomp(&regex, "((http|https)://([-A-Za-z0-9.]+))?(/?.*)", REG_EXTENDED);
     }
@@ -23,7 +27,7 @@ int domain_path_parser(const char *url, char **domain, char **path, int href_fla
     if (reg_status != 0) {
         perror("Couldn't compile regex");
 
-        return -1;
+        return PARSE_ERROR;
     }
 
     size_t n = 8; // number of matches
@@ -34,7 +38,7 @@ int domain_path_parser(const char *url, char **domain, char **path, int href_fla
         print_error("Regular expression has no match", __func__);
 
         free(pmatch);
-        return -1;
+        return PARSE_ERROR;
     }
 
 //    for (size_t i = 0; pmatch[i].rm_so != -1 && i < n; ++i) {
@@ -79,12 +83,24 @@ int domain_path_parser(const char *url, char **domain, char **path, int href_fla
                 strcpy(*path, "/");
             }
         }
+
+        if ((*path)[0] == '/'){
+            is_absolute = 1;
+        } else {
+            is_relative = 1;
+        }
     }
 
     free(pmatch);
     regfree(&regex);
 
-    return 0;
+    if (is_absolute) {
+        return ABSOLUTE_PATH;
+    } else if (is_relative) {
+        return RELATIVE_PATH;
+    }
+
+    return SUCCESS;
 }
 
 
