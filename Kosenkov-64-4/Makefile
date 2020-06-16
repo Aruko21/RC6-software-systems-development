@@ -1,6 +1,9 @@
 # Exec file name
 TARGET = lab4
 
+# Plot file
+PLOT = results.gp
+
 # cc invoking
 CC = mpicc
 
@@ -23,5 +26,7 @@ $(TARGET): $(OBJECTS)
 # rule for implicit handling of all object files
 %.o: %.c
 	$(CC) -c $< -o $@
+plot:
+	gnuplot ./$(PLOT)
 clean:
-	rm -rf $(TARGET) $(SRCS)*.o
+	rm -rf $(TARGET) $(SRCS)*.o $(PLOT)

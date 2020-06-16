@@ -31,3 +31,4 @@ add_executable(tretyakova examples/lab3/Tretyakova/main.c)
 
 add_executable(lubyanov examples/lab4/Lubyanov/main.c)
 add_executable(kizimenko examples/lab4/Kizimenko/main.c)
+add_executable(smehunov examples/lab4/smehunov/main.c)
