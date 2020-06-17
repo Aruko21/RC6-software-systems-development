@@ -26,10 +26,8 @@ void thread_initialise() {
 
     pthread_mutex_init(&mutx1, NULL);
     pthread_cond_init(&cond_can_input, NULL);
-    pthread_cond_init(&cond_can_first_handle, NULL);
     pthread_mutex_init(&mutx2, NULL);
-    pthread_cond_init(&cond_can_first_send, NULL);
-    pthread_cond_init(&cond_can_second_handle, NULL);
+    pthread_cond_init(&cond_can_first_handle, NULL);
 
 
     if (pthread_create(&itid, &pattr, first_handler, NULL)) {
@@ -44,10 +42,8 @@ void thread_initialise() {
 void thread_free() {
     pthread_mutex_destroy(&mutx1);
     pthread_cond_destroy(&cond_can_input);
-    pthread_cond_destroy(&cond_can_first_handle);
     pthread_mutex_destroy(&mutx2);
-    pthread_cond_destroy(&cond_can_first_send);
-    pthread_cond_destroy(&cond_can_second_handle);
+    pthread_cond_destroy(&cond_can_first_handle);
 }
 
 int main(int argc, char **argv) {

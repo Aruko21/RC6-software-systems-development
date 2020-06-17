@@ -118,8 +118,6 @@ void reader() {
             continue;
         }
 
-        pthread_cond_signal(&cond_can_first_handle);
-
         // Проверка условия на входе и выходе - см. конспект в OneNote. и так более наглядно, чего ждем.
         while (input_str_len != 0) {
             pthread_cond_wait(&cond_can_input, &mutx1);
@@ -127,7 +125,6 @@ void reader() {
     }
 
     done = 1;
-    pthread_cond_signal(&cond_can_first_handle);
 
     pthread_mutex_unlock(&mutx1);
 }

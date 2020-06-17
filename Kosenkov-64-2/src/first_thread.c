@@ -44,18 +44,19 @@ void *first_handler(void *arg_p) {
     char *message = "[First thread start]\n";
     write(STDOUT_FILENO, message, strlen(message));
 
+    pthread_mutex_lock(&mutx2);
+
     while (1) {
         pthread_mutex_lock(&mutx1);
 
-        while (input_str_len == 0 && done == 0) {
-            pthread_cond_wait(&cond_can_first_handle, &mutx1);
-        }
-
-        if (done && input_str_len == 0) {
-            pthread_cond_signal(&cond_can_second_handle);
+        if (input_str_len == 0) {
             pthread_mutex_unlock(&mutx1);
-            pthread_mutex_unlock(&mutx2);
-            break;
+            if (done) {
+                pthread_mutex_unlock(&mutx2);
+                break;
+            } else {
+                continue;
+            }
         }
 
         strncpy(tmp_buf, input_str_buf, input_str_len + 1);
@@ -86,19 +87,13 @@ void *first_handler(void *arg_p) {
             write(STDOUT_FILENO, "\n", 1);
         }
 
-        pthread_mutex_lock(&mutx2);
-
-        while (intermediate_str_len != 0) {
-            pthread_cond_wait(&cond_can_first_send, &mutx2);
-        }
-
         intermediate_str_len = length;
 
         strncpy(intermediate_str_buf, formatted_string, intermediate_str_len + 1);
 
-        pthread_cond_signal(&cond_can_second_handle);
-
-        pthread_mutex_unlock(&mutx2);
+        while (intermediate_str_len != 0) {
+            pthread_cond_wait(&cond_can_first_handle, &mutx2);
+        }
     }
 
     free(tmp_buf);

@@ -47,14 +47,14 @@ void *second_handler(void *arg_p) {
     while (1) {
         pthread_mutex_lock(&mutx2);
 
-        while (intermediate_str_len == 0 && done == 0) {
-            pthread_cond_wait(&cond_can_second_handle, &mutx2);
-        }
-
-        // Main thread cad done, but the buffer is not empty, what means, that first thread is prepared new data
-        if (done && intermediate_str_len == 0) {
+        if (intermediate_str_len == 0) {
             pthread_mutex_unlock(&mutx2);
-            break;
+
+            if (done) {
+                break;
+            } else {
+                continue;
+            }
         }
 
         strncpy(tmp_buf, intermediate_str_buf, intermediate_str_len + 1);
@@ -62,7 +62,7 @@ void *second_handler(void *arg_p) {
         length = intermediate_str_len;
         intermediate_str_len = 0;
 
-        pthread_cond_signal(&cond_can_first_send);
+        pthread_cond_signal(&cond_can_first_handle);
         pthread_mutex_unlock(&mutx2);
 
         string_handler handler_func = get_second_thread_handler();
