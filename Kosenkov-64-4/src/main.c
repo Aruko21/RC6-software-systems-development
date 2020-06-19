@@ -15,7 +15,6 @@
 #define R 1000.0
 #define C 1e-5
 
-
 int time_interval = 0;
 int elements_count = 0;
 int elements_height = 0;
@@ -71,7 +70,7 @@ int main(int argc, char **argv) {
         elements_info[0] = elements_width; //количество элементов в строке
         elements_info[1] = elements_height / proc_count; //количество строк на процесс
         elements_info[2] = proc_count; // количество процессов
-        elements_info[3] = time_interval; //время работы
+        elements_info[3] = time_interval; //время работы (в миллисекундах)
 
         N_matrix = (double *) malloc(elements_count * sizeof(double)); // итоговая матрица
         for (int i = 0; i < elements_count; i++) {
@@ -92,7 +91,11 @@ int main(int argc, char **argv) {
     double *strip_n = (double *) malloc(rows * cols * sizeof(double)); // матрица текущего момента ленты
     double *strip_np1 = (double *) malloc(cols * rows * sizeof(double)); // матрица следующего момента ленты
 
-    for (int time = 0; time < time_interval / time_step; ++time) {
+    // Инициализация лент
+    MPI_Scatter((void *) N_matrix, cols * rows, MPI_DOUBLE, (void *) strip_n, cols * rows, MPI_DOUBLE, 0,
+                MPI_COMM_WORLD);
+
+    for (int time = 0; time < time_interval / (time_step * 1000); ++time) {
         MPI_Status *status1 = (MPI_Status *) malloc(sizeof(MPI_Status));
         MPI_Status *status2 = (MPI_Status *) malloc(sizeof(MPI_Status));
 
@@ -127,7 +130,8 @@ int main(int argc, char **argv) {
 
         for (int i = 0; i < rows; ++i) {
             for (int j = 0; j < cols; ++j) {
-                if ((rank == 0 && i == 0) || ((rank == count - 1) && (i == rows - 1)) || (j == 0) || (j == cols - 1)) { // граничные узлы
+                if ((rank == 0 && i == 0) || ((rank == count - 1) && (i == rows - 1)) || (j == 0) ||
+                    (j == cols - 1)) { // граничные узлы
                     strip_np1[i * cols + j] = Ia * R;
                 } else { // внутренние узлы
                     if (i == 0) { // верхняя полоса
