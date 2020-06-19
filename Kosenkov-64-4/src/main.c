@@ -1,4 +1,4 @@
-#define GRAPHIC_MODE
+//#define GRAPHIC_MODE
 
 #include <stdlib.h>
 #include <unistd.h>
@@ -54,12 +54,20 @@ int main(int argc, char **argv) {
             exit(-1);
         }
 
+        int proc_count = total;
+
         time_interval = atoi(argv[3]);
         elements_height = atoi(argv[2]);
         elements_width = atoi(argv[1]);
 
+        if (elements_width > elements_height && elements_width % proc_count == 0) {
+            // Оптимизация с целью уменьшения количества элементов по горизонтали
+            int tmp_height = elements_width;
+            elements_width = elements_height;
+            elements_height = tmp_height;
+        }
+
         elements_count = elements_height * elements_width;
-        int proc_count = total;
 
         if (elements_height % proc_count != 0) {
             sprintf(msg_buf, "Number of processes is not multiple to elements\n");
@@ -107,22 +115,22 @@ int main(int argc, char **argv) {
                      cols, // количество элементов сообщения
                      MPI_DOUBLE, // тип данных
                      next_strip, // ид ветви
-                     1, // ид сообщения
+                     0, // ид сообщения
                      MPI_COMM_WORLD // область связи (коммутатор)
             );
 
             /* Прием первой строки следующей ленты */
             /* Последний аргумент - информация о принятом сообщении */
-            MPI_Recv(el_next, cols, MPI_DOUBLE, next_strip, 2, MPI_COMM_WORLD, status2);
+            MPI_Recv(el_next, cols, MPI_DOUBLE, next_strip, 0, MPI_COMM_WORLD, status2);
         }
 
         if (rank != 0) {
             int prev_strip = rank - 1;   // предыдущеая лента
 
             /* Отправка первой строки текущей ленты предыдущей ленте */
-            MPI_Send(strip_n, cols, MPI_DOUBLE, prev_strip, 2, MPI_COMM_WORLD);
+            MPI_Send(strip_n, cols, MPI_DOUBLE, prev_strip, 0, MPI_COMM_WORLD);
             /* Преим последней строки предыдущей ленты */
-            MPI_Recv(el_prev, cols, MPI_DOUBLE, prev_strip, 1, MPI_COMM_WORLD, status1);
+            MPI_Recv(el_prev, cols, MPI_DOUBLE, prev_strip, 0, MPI_COMM_WORLD, status1);
         }
 
         free(status1);
@@ -156,6 +164,7 @@ int main(int argc, char **argv) {
             }
         }
 
+#ifdef GRAPHIC_MODE
         MPI_Gather((void *) strip_np1, // буфер, из которого отправляются данные
                    rows * cols, // кол-во элементов отправляемых данных
                    MPI_DOUBLE, // тип отправляемых данных
@@ -165,6 +174,7 @@ int main(int argc, char **argv) {
                    0, // куда отсылать, кто принимает
                    MPI_COMM_WORLD // процессы из какой группы выполняют эту функцию
         );
+#endif
 
         /* n + 1-я итерация далее становится n-й */
         double *temp_ptr = strip_n;
