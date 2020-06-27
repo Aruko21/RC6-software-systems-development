@@ -1,4 +1,4 @@
-//#define GRAPHIC_MODE
+#define GRAPHIC_MODE
 
 #include <stdlib.h>
 #include <unistd.h>
@@ -19,6 +19,7 @@ int time_interval = 0;
 int elements_count = 0;
 int elements_height = 0;
 int elements_width = 0;
+FILE *gp = NULL;
 
 double time_step = R * C / 10;
 
@@ -30,10 +31,6 @@ int main(int argc, char **argv) {
     int total = 0;
 
     char msg_buf[BUF_SIZE];
-
-#ifdef GRAPHIC_MODE
-    FILE *gp = fopen("results.gp", "w");
-#endif
 
     /* Инициализация библиотеки MPI, передача в инициализирующую функцию аргументов
      * командной строки, определяющих количество подпрограмм
@@ -53,6 +50,10 @@ int main(int argc, char **argv) {
 
             exit(-1);
         }
+
+#ifdef GRAPHIC_MODE
+        gp = fopen("results.gp", "w");
+#endif
 
         int proc_count = total;
 
@@ -200,6 +201,7 @@ int main(int argc, char **argv) {
 
     if (rank == 0) {
         free(N_matrix);
+        fclose(gp);
     }
 
     free(el_prev);
